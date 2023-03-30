@@ -1,0 +1,12 @@
+# ...
+
+gcsSync:
+  credentialVolumeName: google-credential
+  secretName: sa-credential
+  credentialVolumePath: /.gcp/
+  credentialName: credential.json
+  bucketName: <BUCKET_NAME>
+  container:
+    name: gcs-sync
+    image: <REPO>/gcs-sync
+    tag: <TAG>
