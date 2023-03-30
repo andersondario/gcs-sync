@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.deployment.name }}
+  labels:
+    app: {{ .Values.deployment.labels.app }}
+spec:
+  replicas: {{ .Values.deployment.replicas }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.deployment.labels.app }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.deployment.labels.app }}
+    spec:
+      containers:
+      - name: {{ .Values.deployment.container.name }}
+        image: {{ .Values.deployment.container.image.repository }}{{ .Values.deployment.container.image.name }}{{ .Values.deployment.container.image.tag }}
+        volumeMounts:
+        - name: {{ .Values.storage.volumes.nfs.mountName }}
+          mountPath: {{ .Values.storage.volumes.nfs.mountPath }}
+        ports:
+        - containerPort: 8080
+          name: "{{ .Values.service.ports.t3.number }}"
+      - name: {{ .Values.gcsSync.container.name }}
+        image: "{{ .Values.gcsSync.container.image }}:{{ .Values.gcsSync.container.tag }}"
+        env:
+        - name: DATA_VOL
+          value: {{ .Values.storage.volumes.nfs.mountPath }}
+        - name: BUCKET_NAME
+          value: {{ .Values.gcsSync.bucketName }}
+        - name: APP_NAME
+          value: {{ .Values.deployment.labels.app }}
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: "{{ .Values.gcsSync.credentialVolumePath }}/{{ .Values.gcsSync.credentialName }}"
+        - name: GOOGLE_PROJECT_ID
+          value: {{ .Values.cloudProvider.googleCloudPlatform.project.Id }}
+        - name: GOOGLE_REGION
+          value: {{ .Values.cloudProvider.googleCloudPlatform.project.region }}
+        volumeMounts:
+        - name: {{ .Values.storage.volumes.nfs.mountName }}
+          mountPath: {{ .Values.storage.volumes.nfs.mountPath }}
+        - name: {{ .Values.gcsSync.credentialVolumeName }}
+          mountPath: {{ .Values.gcsSync.credentialVolumePath }}
+      volumes:
+      - name: {{ .Values.storage.volumes.nfs.mountName }}
+        persistentVolumeClaim:
+          claimName: {{ .Values.storage.volumes.nfs.claim.name }}
+      - name: {{ .Values.gcsSync.credentialVolumeName }}
+        secret:
+          secretName: {{ .Values.gcsSync.secretName }}
